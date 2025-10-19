@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+
+<html lang="nl">
+<head>
+    <meta charset="utf-8"/>
+    <title>Reactiespel Thirza Burger</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        .grid { display: grid; grid-template-columns: repeat(3, 100px); grid-gap: 10px; justify-content: center; margin-top: 20px; }
+        .circle { width: 100px; height: 100px; border-radius: 50%; background-color: green; display: flex; align-items: center; justify-content: center; font-size: 24px; color: white; cursor: pointer; }
+        #scoreboard { margin-top: 20px; }
+        #nameDisplay { margin-top: 10px; font-weight: bold; }
+    </style>
+</head>
+<body>
+<h1>Reactiespel</h1>
+<button onclick="chooseName()">Klik hier voor een naam</button>
+<div id="nameDisplay"></div>
+<div class="grid" id="grid"></div>
+<div id="scoreboard">
+    <p>Topscore: <span id="topscore">-</span> seconden</p>
+    <p>Huidige tijd: <span id="currentTime">0</span> seconden</p>
+    <p>Scorebord:</p>
+    <ul id="scoreList"></ul>
+</div>
+<audio id="applause" src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA="></audio>
+<audio id="aaaah" src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA="></audio>
+<script>let timerStarted = false;
+
+const names = ["Elana","Jaira","Pieter","Demi","Benjamin","Jenairo","Lize","Lev","Quyen","Semih","Xander","Tess","Elijah","Job","Florian","Suus","Tirza","Khatereh","Noor","Adam","Bowie","Bodhi","Arne","Layla","Babet","Pim","Abe"];
+let currentName = "";
+let numbers = [1,2,3,4,5,6,7,8,9];
+let current = 1;
+let startTime = null;
+let timerInterval = null;
+let topscore = null;
+let scoreData = {};
+let revealed = Array(9).fill(false);
+
+function chooseName() {
+    const randomIndex = Math.floor(Math.random() * names.length);
+    currentName = names[randomIndex];
+    document.getElementById("nameDisplay").innerText = currentName;
+}
+
+function shuffleNumbers() {
+    for (let i = numbers.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [numbers[i], numbers[j]] = [numbers[j], numbers[i]];
+    }
+}
+
+function renderGrid() {
+    const grid = document.getElementById("grid");
+    grid.innerHTML = "";
+    for (let i = 0; i < 9; i++) {
+        const div = document.createElement("div");
+        div.className = "circle";
+        div.dataset.index = i;
+        if (revealed[i]) {
+            div.innerText = numbers[i];
+        }
+        div.onclick = handleClick;
+        grid.appendChild(div);
+    }
+}
+
+function handleClick(e) {
+    const index = e.target.dataset.index;
+    const number = numbers[index];
+    e.target.innerText = number;
+
+    if (number == current) {
+        document.getElementById("applause").play();
+
+        if (!timerStarted) {
+            startTime = new Date();
+            timerInterval = setInterval(updateTimer, 100);
+            timerStarted = true;
+        }
+
+        revealed[index] = true;
+        current++;
+
+        if (current > 9) {
+            const endTime = new Date();
+            const duration = ((endTime - startTime) / 1000).toFixed(2);
+            if (!topscore || duration < topscore) {
+                topscore = duration;
+                document.getElementById("topscore").innerText = topscore;
+            }
+            if (currentName) {
+                scoreData[currentName] = duration;
+                updateScoreboard();
+            }
+
+            clearInterval(timerInterval);
+            timerStarted = false;
+            current = 1;
+            startTime = null;
+            revealed = Array(9).fill(false);
+            shuffleNumbers();
+            setTimeout(renderGrid, 500);
+        }
+    } else {
+        document.getElementById("aaaah").play();
+        setTimeout(() => {
+            current = 1;
+            revealed = Array(9).fill(false);
+            document.getElementById("currentTime").innerText = "0";
+            renderGrid();
+        }, 500);
+    }
+}
+
+function updateTimer() {
+    if (startTime) {
+        const now = new Date();
+        const duration = ((now - startTime) / 1000).toFixed(2);
+        document.getElementById("currentTime").innerText = duration;
+    }
+}
+
+function updateScoreboard() {
+    const list = document.getElementById("scoreList");
+    list.innerHTML = "";
+    for (const [name, time] of Object.entries(scoreData)) {
+        const li = document.createElement("li");
+        li.innerText = name + ": " + time + " sec";
+        list.appendChild(li);
+    }
+}
+
+shuffleNumbers();
+renderGrid();
+</script>
+</body>
+</html>
